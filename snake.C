@@ -7,12 +7,14 @@
 #include <time.h>
 
 int direction = 0;
+int prev_direction = 0;
+
+int snake_length = 6;
 
 struct point {
 int x;
 int y;
 };
-
 
 
 void* inputHandler(void* arg) {
@@ -21,16 +23,28 @@ void* inputHandler(void* arg) {
         ch = getch();
         switch (ch) {
             case KEY_UP:
+                prev_direction = direction;
+                if (prev_direction != 2) {
                 direction = 1;
+                } 
                 break;
             case KEY_DOWN:
+                prev_direction = direction;
+                if (prev_direction != 1) {
                 direction = 2;
+                }
                 break;
             case KEY_LEFT:
+                prev_direction = direction;
+                if (prev_direction != 4) {
                 direction = 3;
+                } 
                 break;
             case KEY_RIGHT:
+                prev_direction = direction;                
+                if (prev_direction != 3) {
                 direction = 4;
+                }
                 break;
             case 'q':
                 endwin();
@@ -40,18 +54,37 @@ void* inputHandler(void* arg) {
     return NULL;
 }
 
+void death_screen() {
+        
+    int row, col;
+
+    getmaxyx(stdscr, row, col);
+
+    int start_row = (row - 5) / 2;
+    int start_col = (col - 17) / 2; 
+
+    mvprintw(start_row, start_col, "+-----------------+");
+    mvprintw(start_row + 1, start_col, "|    You died!    |");
+    mvprintw(start_row + 2, start_col, "+-----------------+");
+    mvprintw(start_row + 3, start_col, "| Score: %8d |", snake_length);
+    mvprintw(start_row + 4, start_col, "+-----------------+");
+
+    refresh();
+    getch();
+    endwin();
+    _exit(0);
+
+}
+
 int main() {
 
-    int snake_length = 6;
-    int max_food = 6;
-
+    int max_food = 20;
     // Allocate memory for coordinates of snake body
     struct point *coordinates = (struct point *)malloc(snake_length*sizeof(struct point));
     if (coordinates == NULL) {
         printf("Memory allocation failed\n");
-        return 1;
     }
-    
+
     // Initialize NCURSES
     initscr();            // Initialize ncurses
     cbreak();             // Disable line buffering
@@ -92,31 +125,37 @@ int main() {
                 break; 
             
             case 1:
-            mvaddch(coordinates[snake_length - 1].y - 1, coordinates[snake_length - 1].x, '#');
-            memmove(&coordinates[0], &coordinates[1], (snake_length - 1) * sizeof(struct point));
-            coordinates[snake_length - 1].y = coordinates[snake_length - 2].y - 1;
+                    if ((mvinch(coordinates[snake_length - 1].y - 1, coordinates[snake_length - 1].x) & A_CHARTEXT) == '#') {
+                        death_screen();
+                    }
+                    mvaddch(coordinates[snake_length - 1].y - 1, coordinates[snake_length - 1].x, '#');
+                    memmove(&coordinates[0], &coordinates[1], (snake_length - 1) * sizeof(struct point));
+                    coordinates[snake_length - 1].y = coordinates[snake_length - 2].y - 1;
                 break;
 
             case 2:
-            mvaddch(coordinates[snake_length - 1].y + 1, coordinates[snake_length - 1].x, '#');
-            memmove(&coordinates[0], &coordinates[1], (snake_length - 1) * sizeof(struct point));
-            coordinates[snake_length - 1].y = coordinates[snake_length - 2].y + 1;
-
-
+                    if ((mvinch(coordinates[snake_length - 1].y + 1, coordinates[snake_length - 1].x) & A_CHARTEXT) == '#') {
+                        death_screen();
+                    }
+                    mvaddch(coordinates[snake_length - 1].y + 1, coordinates[snake_length - 1].x, '#');
+                    memmove(&coordinates[0], &coordinates[1], (snake_length - 1) * sizeof(struct point));
+                    coordinates[snake_length - 1].y = coordinates[snake_length - 2].y + 1;
                 break;
             case 3:
-
-            mvaddch(coordinates[snake_length - 1].y, coordinates[snake_length - 1].x - 1, '#');  
-            memmove(&coordinates[0], &coordinates[1], (snake_length - 1) * sizeof(struct point));
-            coordinates[snake_length - 1].x = coordinates[snake_length - 2].x - 1;
-
+                    if ((mvinch(coordinates[snake_length - 1].y, coordinates[snake_length - 1].x - 1) & A_CHARTEXT) == '#') {
+                        death_screen();
+                    }
+                    mvaddch(coordinates[snake_length - 1].y, coordinates[snake_length - 1].x - 1, '#');  
+                    memmove(&coordinates[0], &coordinates[1], (snake_length - 1) * sizeof(struct point));
+                    coordinates[snake_length - 1].x = coordinates[snake_length - 2].x - 1;
                 break; 
-
             case 4:
-            mvaddch(coordinates[snake_length - 1].y, coordinates[snake_length - 1].x+1, '#');  
-            memmove(&coordinates[0], &coordinates[1], (snake_length - 1) * sizeof(struct point));
-            coordinates[snake_length - 1].x = coordinates[snake_length - 2].x + 1;
-
+                    if ((mvinch(coordinates[snake_length - 1].y, coordinates[snake_length - 1].x + 1) & A_CHARTEXT) == '#') {
+                        death_screen();
+                    }
+                    mvaddch(coordinates[snake_length - 1].y, coordinates[snake_length - 1].x+1, '#');  
+                    memmove(&coordinates[0], &coordinates[1], (snake_length - 1) * sizeof(struct point));
+                    coordinates[snake_length - 1].x = coordinates[snake_length - 2].x + 1;
                 break; 
         }
         // Delete 1st entry of the struct
@@ -139,18 +178,27 @@ int main() {
                 }
                     temp[snake_length - 1] = temp[snake_length - 2];
                     coordinates = temp;
-
             }
+
+        }
+        // Out of bounds
+        if (coordinates[snake_length - 1].y == -1) {
+            coordinates[snake_length - 1].y = y_max;
+        } else if (coordinates[snake_length - 1].y == y_max) {
+            coordinates[snake_length - 1].y = 0;
+        } else if (coordinates[snake_length - 1].x == x_max) {
+            coordinates[snake_length - 1].x = 0;
+        } else if (coordinates[snake_length - 1 ].x == -1) {
+            coordinates[snake_length - 1].x = x_max;            
         }
 
-
-        // Refresh the screen
         refresh();
-        usleep(200000); // Sleep for 100 milliseconds
+        usleep(150000);
     }
     
     free(coordinates);
-    endwin(); // End ncurses mode
+    endwin();
     return 0;
 }
+
 

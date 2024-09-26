@@ -8,8 +8,8 @@
 
 int direction = 0;
 int prev_direction = 0;
-
 int snake_length = 6;
+bool paused = false;
 
 struct point {
 int x;
@@ -17,41 +17,65 @@ int y;
 };
 
 
+
 void* inputHandler(void* arg) {
     int ch;
     while (1) {
-        ch = getch();
-        switch (ch) {
-            case KEY_UP:
-                prev_direction = direction;
-                if (prev_direction != 2) {
-                direction = 1;
-                } 
-                break;
-            case KEY_DOWN:
-                prev_direction = direction;
-                if (prev_direction != 1) {
-                direction = 2;
+                ch = getch();
+                switch (ch) {
+                    case KEY_UP:
+                        prev_direction = direction;
+                        if (prev_direction != 2) {
+                        direction = 1;
+                        } 
+                        break;
+                    case KEY_DOWN:
+                        prev_direction = direction;
+                        if (prev_direction != 1) {
+                        direction = 2;
+                        }
+                        break;
+                    case KEY_LEFT:
+                        prev_direction = direction;
+                        if (prev_direction != 4) {
+                        direction = 3;
+                        } 
+                        break;
+                    case KEY_RIGHT:
+                        prev_direction = direction;                
+                        if (prev_direction != 3) {
+                        direction = 4;
+                        }
+                        break;
+                    case 'q':
+                        endwin();
+                        _exit(0);
+                    case 'p':
+                        paused = true;
                 }
-                break;
-            case KEY_LEFT:
-                prev_direction = direction;
-                if (prev_direction != 4) {
-                direction = 3;
-                } 
-                break;
-            case KEY_RIGHT:
-                prev_direction = direction;                
-                if (prev_direction != 3) {
-                direction = 4;
-                }
-                break;
-            case 'q':
-                endwin();
-                _exit(0);
         }
-    }
     return NULL;
+}
+
+void pause_screen() {
+    int row, col;
+
+    getmaxyx(stdscr, row, col);
+
+    int start_row = (row - 5) / 2;
+    int start_col = (col - 38) / 2; 
+
+    scr_dump("screen_dump");
+    mvprintw(start_row, start_col,     "+------------------------------------+");
+    mvprintw(start_row + 1, start_col, "|  Paused. Press any key to continue |");
+    mvprintw(start_row + 2, start_col, "+------------------------------------+");
+    refresh();
+    
+    getch();
+        
+    paused = false;
+    scr_restore("screen_dump");
+    refresh();
 }
 
 void death_screen() {
@@ -119,6 +143,11 @@ int main() {
 
     // Main game loop
     while (1) {
+        // Check if game is paused
+        if (paused) {
+        pause_screen();
+        }
+        refresh();
         // Movement
         switch (direction) {
             case 0:
@@ -191,7 +220,6 @@ int main() {
         } else if (coordinates[snake_length - 1 ].x == -1) {
             coordinates[snake_length - 1].x = x_max;            
         }
-
         refresh();
         usleep(150000);
     }

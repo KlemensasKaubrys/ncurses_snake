@@ -8,7 +8,7 @@
 
 int direction = 0;
 int prev_direction = 0;
-int snake_length = 5;
+int snake_length = 999;
 bool paused = false;
 
 struct point {
@@ -16,28 +16,18 @@ int x;
 int y;
 };
 
-int is_in_array(point value, point *array, int size) {
-    for (int i = 0; i < size; i++) {
-        if (array[i].x == value.x && array[i].y == value.y) {
-            return 1; // Point found in array
-        }
-    }
-    return 0; // Point not found in array
-}
-
 point generate_unique_point(point *array, int size, int x_max, int y_max) {
     point p;
     do {
         p.x = rand() % (x_max + 1);
         p.y = rand() % (y_max + 1);
-    } while (is_in_array(p, array, size));
+    } while ((mvinch(p.y, p.x) & A_CHARTEXT) == '#');
     return p;
 }
 
 void* inputHandler(void* arg) {
     int ch;
     while (1) {
-        usleep(1000);
         ch = getch();
         switch (ch) {
             case KEY_UP:

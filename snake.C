@@ -8,7 +8,7 @@
 
 int direction = 0;
 int prev_direction = 0;
-int snake_length = 6;
+int snake_length = 5;
 bool paused = false;
 
 struct point {
@@ -16,43 +16,56 @@ int x;
 int y;
 };
 
+int is_in_array(point value, point *array, int size) {
+    for (int i = 0; i < size; i++) {
+        if (array[i].x == value.x && array[i].y == value.y) {
+            return 1; // Point found in array
+        }
+    }
+    return 0; // Point not found in array
+}
 
+point generate_unique_point(point *array, int size, int x_max, int y_max) {
+    point p;
+    do {
+        p.x = rand() % (x_max + 1);
+        p.y = rand() % (y_max + 1);
+    } while (is_in_array(p, array, size));
+    return p;
+}
 
 void* inputHandler(void* arg) {
     int ch;
     while (1) {
-                ch = getch();
-                switch (ch) {
-                    case KEY_UP:
-                        prev_direction = direction;
-                        if (prev_direction != 2) {
-                        direction = 1;
-                        } 
-                        break;
-                    case KEY_DOWN:
-                        prev_direction = direction;
-                        if (prev_direction != 1) {
-                        direction = 2;
-                        }
-                        break;
-                    case KEY_LEFT:
-                        prev_direction = direction;
-                        if (prev_direction != 4) {
-                        direction = 3;
-                        } 
-                        break;
-                    case KEY_RIGHT:
-                        prev_direction = direction;                
-                        if (prev_direction != 3) {
-                        direction = 4;
-                        }
-                        break;
-                    case 'q':
-                        endwin();
-                        _exit(0);
-                    case 'p':
-                        paused = true;
+        usleep(1000);
+        ch = getch();
+        switch (ch) {
+            case KEY_UP:
+                if (prev_direction != 2) {
+                direction = 1;
+                } 
+                break;
+            case KEY_DOWN:
+                if (prev_direction != 1) {
+                direction = 2;
                 }
+                break;
+            case KEY_LEFT:
+                if (prev_direction != 4) {
+                direction = 3;
+                } 
+                break;
+            case KEY_RIGHT:
+                if (prev_direction != 3) {
+                direction = 4;
+                }
+                break;
+            case 'q':
+                endwin();
+                _exit(0);
+            case 27:
+                paused = true;
+            }
         }
     return NULL;
 }
@@ -99,6 +112,7 @@ void death_screen() {
     _exit(0);
 
 }
+
 
 int main() {
 
@@ -148,6 +162,8 @@ int main() {
         pause_screen();
         }
         refresh();
+        // Fix the insta-death bug
+        prev_direction = direction;
         // Movement
         switch (direction) {
             case 0:
@@ -192,9 +208,10 @@ int main() {
         
         // Check if the snake is about to eat a unit of food, if it is destroy old fruit, generate new, add length reallocate memory
         for (int p = 0; p < max_food; ++p) {
+                int food_temp_x;
+                int food_temp_y;
             if (food[p].x == coordinates[snake_length - 1].x && food[p].y == coordinates[snake_length - 1].y) {
-                food[p].x = rand() % (x_max + 1);
-                food[p].y = rand() % (y_max + 1);
+                food[p] = generate_unique_point(coordinates, 1, x_max, y_max);
                 mvaddch(food[p].y, food[p].x, 'O');
                 snake_length += 1;
                 
@@ -220,6 +237,8 @@ int main() {
         } else if (coordinates[snake_length - 1 ].x == -1) {
             coordinates[snake_length - 1].x = x_max;            
         }
+
+
         refresh();
         usleep(150000);
     }

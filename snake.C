@@ -8,7 +8,7 @@
 
 int direction = 0;
 int prev_direction = 0;
-int snake_length = 999;
+int snake_length = 5;
 bool paused = false;
 
 struct point {
